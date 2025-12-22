@@ -1,0 +1,3 @@
+sorular arasında geri-ileri gitme,karar değiştirme veya hatalı giriş için
+yemek tavsiyesi verildikten sonra yemekle ilgili bilgi
+yiyecek-içeceklerin (alkol,meşrubat,ana yemekler çorbalar vs) kategorize edilmesi. Front-end de welcome page'de karşılama ve hemen altında kutucuk şeklinde kategori seçme ekranı olucak. Basılan buton ai tarafından short memoryde kategori olarak tutulucak ve o kategorideki ürünlere göre (back-end kısmında kategori kısmı oluşturulucak eklentier kısmında.) Sorular oluşturulucak. -- Yapıldı --
