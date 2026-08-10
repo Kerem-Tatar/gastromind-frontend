@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell
 } from 'recharts';
+import { API_URL } from "@/lib/api";
 
 // --- TİP TANIMLAMALARI ---
 interface DetailedScore {
@@ -61,9 +62,19 @@ export default function AdminDashboard() {
             return;
         }
 
-        fetch(`https://gastromind-backend.onrender.com/api/dashboard-stats/kral-burger?period=${period}`)
-            .then((res) => res.json())
+        fetch(`${API_URL}/api/admin/dashboard-stats?period=${period}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then((res) => {
+                if (res.status === 401) {
+                    localStorage.removeItem("admin_token");
+                    router.push("/admin/login");
+                    return null;
+                }
+                return res.json();
+            })
             .then((data) => {
+                if (!data) return;
                 setStats(data);
                 setLoading(false);
             })
@@ -82,10 +93,13 @@ export default function AdminDashboard() {
         if (!confirm("⚠️ DİKKAT: 50 adet detaylı test verisi eklenecek.")) return;
         setLoading(true);
         try {
-            const res = await fetch("https://gastromind-backend.onrender.com/api/seed-fake-data", {
+            const token = localStorage.getItem("admin_token");
+            const res = await fetch(`${API_URL}/api/seed-fake-data`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ restaurantSlug: "kral-burger" })
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                }
             });
             const data = await res.json();
             alert(data.message);

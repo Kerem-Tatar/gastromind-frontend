@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import { API_URL } from "@/lib/api";
 
 interface Message {
     role: 'ai' | 'user';
@@ -67,7 +68,7 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
 
         // 2. Backend'e Gönder (Fotoğraf Dahil)
         try {
-            const res = await fetch("https://gastromind-backend.onrender.com/api/submit-feedback", {
+            const res = await fetch(`${API_URL}/api/submit-feedback`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

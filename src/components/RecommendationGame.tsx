@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import FeedbackFlow from "./FeedbackFlow";
+import { API_URL } from "@/lib/api";
 
 interface QuestionData {
     question: string;
@@ -19,7 +20,7 @@ interface Dish {
     image?: string;
 }
 
-export default function RecommendationGame({ category }: { category: string }) {
+export default function RecommendationGame({ category, restaurantSlug }: { category: string; restaurantSlug: string }) {
     const [loading, setLoading] = useState(true);
     const [questionData, setQuestionData] = useState<QuestionData | null>(null);
     const [recommendations, setRecommendations] = useState<Dish[]>([]);
@@ -40,11 +41,11 @@ export default function RecommendationGame({ category }: { category: string }) {
     const fetchNextStep = async (currentExcludedIds: string[]) => {
         setLoading(true);
         try {
-            const res = await fetch("https://gastromind-backend.onrender.com/api/recommend-dish", {
+            const res = await fetch(`${API_URL}/api/recommend-dish`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    restaurantSlug: "kral-burger",
+                    restaurantSlug,
                     excludedDishIds: currentExcludedIds,
                     selectedCategory: category
                 }),
@@ -146,7 +147,7 @@ export default function RecommendationGame({ category }: { category: string }) {
                     <AnimatePresence>
                         {showFeedback && (
                             <FeedbackFlow
-                                restaurantSlug="kral-burger"
+                                restaurantSlug={restaurantSlug}
                                 dishName={winner?.name}
                                 onClose={() => setShowFeedback(false)}
                             />

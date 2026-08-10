@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { API_URL } from "@/lib/api";
 
 interface Dish {
     _id: string;
@@ -9,18 +10,18 @@ interface Dish {
     price: number;
 }
 
-export default function MenuSelector({ onSelect }: { onSelect: (dishName: string) => void }) {
+export default function MenuSelector({ onSelect, restaurantSlug }: { onSelect: (dishName: string) => void; restaurantSlug: string }) {
     const [menu, setMenu] = useState<Dish[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("https://gastromind-backend.onrender.com/api/menu/kral-burger")
+        fetch(`${API_URL}/api/menu/${restaurantSlug}`)
             .then((res) => res.json())
             .then((data) => {
                 setMenu(data);
                 setLoading(false);
             });
-    }, []);
+    }, [restaurantSlug]);
 
     return (
         <div className="w-full max-w-md p-4 h-dvh flex flex-col bg-black">
