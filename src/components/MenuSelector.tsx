@@ -1,18 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { API_URL } from "@/lib/api";
+import DishDetail from "@/components/DishDetail";
 
 interface Dish {
     _id: string;
     name: string;
+    description?: string;
+    ingredients?: string;
+    nutrition_info?: string;
     image?: string;
     price: number;
 }
 
-export default function MenuSelector({ onSelect, restaurantSlug }: { onSelect: (dishName: string) => void; restaurantSlug: string }) {
+export default function MenuSelector({ onReview, restaurantSlug }: { onReview: (dishName: string) => void; restaurantSlug: string }) {
     const [menu, setMenu] = useState<Dish[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
     useEffect(() => {
         fetch(`${API_URL}/api/menu/${restaurantSlug}`)
@@ -24,35 +29,47 @@ export default function MenuSelector({ onSelect, restaurantSlug }: { onSelect: (
     }, [restaurantSlug]);
 
     return (
-        <div className="w-full max-w-md p-4 h-dvh flex flex-col bg-black">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">Ne Yedin Kral? 😋</h2>
+        <div className="w-full max-w-md p-4 h-dvh flex flex-col bg-[var(--color-bg)] mx-auto">
+            <h2 className="text-xl font-semibold text-[var(--color-text)] mb-6 text-center">Menü</h2>
 
             {loading ? (
-                <div className="text-white text-center animate-pulse">Menü Yükleniyor...</div>
+                <div className="text-[var(--color-text-muted)] text-center animate-pulse">Menü Yükleniyor...</div>
+            ) : menu.length === 0 ? (
+                <div className="text-[var(--color-text-muted)] text-center">Menü henüz eklenmemiş.</div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 overflow-y-auto pb-20">
+                <div className="grid grid-cols-1 gap-3 overflow-y-auto pb-20">
                     {menu.map((item, index) => (
                         <motion.button
                             key={item._id}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            onClick={() => onSelect(item.name)}
-                            className="flex items-center gap-4 bg-zinc-900 p-4 rounded-2xl border border-zinc-800 hover:border-orange-500 transition-colors text-left"
+                            transition={{ delay: index * 0.05 }}
+                            onClick={() => setSelectedDish(item)}
+                            className="flex items-center gap-4 bg-[var(--color-surface)] p-4 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-brand)] transition-colors text-left"
                         >
-                            <img
-                                src={item.image || "https://via.placeholder.com/100"}
-                                alt={item.name}
-                                className="w-16 h-16 rounded-xl object-cover"
-                            />
+                            {item.image ? (
+                                <img src={item.image} alt={item.name} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                            ) : (
+                                <div className="w-16 h-16 rounded-lg bg-[var(--color-border)] shrink-0" />
+                            )}
                             <div>
-                                <h3 className="text-white font-bold">{item.name}</h3>
-                                <span className="text-orange-500 font-bold">{item.price} TL</span>
+                                <h3 className="text-[var(--color-text)] font-medium">{item.name}</h3>
+                                <span className="text-[var(--color-brand)] font-medium">{item.price} TL</span>
                             </div>
                         </motion.button>
                     ))}
                 </div>
             )}
+
+            <AnimatePresence>
+                {selectedDish && (
+                    <DishDetail
+                        dish={selectedDish}
+                        onClose={() => setSelectedDish(null)}
+                        onReview={onReview}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

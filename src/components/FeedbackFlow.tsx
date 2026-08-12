@@ -2,31 +2,34 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Camera, Send, X } from "lucide-react";
 import { API_URL } from "@/lib/api";
 
 interface Message {
     role: 'ai' | 'user';
     text: string;
-    image?: string; // Mesajlarda görsel desteği
+    image?: string;
 }
 
 interface FeedbackFlowProps {
     restaurantSlug: string;
-    dishName: string;
+    dishName?: string;
     onClose: () => void;
 }
 
 export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: FeedbackFlowProps) {
+    const openingMessage = dishName
+        ? `Selam! ${dishName} nasıldı? Dürüst ol, aramızda kalacak.`
+        : `Selam! Deneyimin hakkında ne düşünüyorsun, seni dinliyorum.`;
+
     const [messages, setMessages] = useState<Message[]>([
-        { role: 'ai', text: `Selam! ${dishName} nasıldı? Dürüst ol, aramızda kalacak. 😉` }
+        { role: 'ai', text: openingMessage }
     ]);
     const [inputText, setInputText] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // --- FOTOĞRAF İÇİN YENİ STATE'LER ---
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    // ------------------------------------
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -38,35 +41,31 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
         scrollToBottom();
     }, [messages]);
 
-    // --- FOTOĞRAF SEÇME FONKSİYONU ---
     const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                setSelectedImage(reader.result as string); // Resmi Base64 formatına çevirip hafızaya al
+                setSelectedImage(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // --- MESAJ GÖNDERME ---
     const handleSend = async () => {
-        if (!inputText.trim() && !selectedImage) return; // Boşsa gönderme
+        if (!inputText.trim() && !selectedImage) return;
 
-        // 1. Kullanıcı Mesajını Ekrana Bas
         const userMsg: Message = {
             role: 'user',
             text: inputText,
-            image: selectedImage || undefined // Varsa resmi de ekle
+            image: selectedImage || undefined
         };
 
         setMessages(prev => [...prev, userMsg]);
         setInputText("");
-        setSelectedImage(null); // Resmi temizle
+        setSelectedImage(null);
         setLoading(true);
 
-        // 2. Backend'e Gönder (Fotoğraf Dahil)
         try {
             const res = await fetch(`${API_URL}/api/submit-feedback`, {
                 method: "POST",
@@ -74,18 +73,17 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
                 body: JSON.stringify({
                     restaurantSlug,
                     dishName,
-                    conversation: [...messages, userMsg], // Tüm geçmişi gönder
-                    customerPhoto: userMsg.image // <--- YENİ: Fotoğrafı Backend'e gönderiyoruz
+                    conversation: [...messages, userMsg],
+                    customerPhoto: userMsg.image
                 }),
             });
 
             const data = await res.json();
 
-            // 3. AI Cevabını Ekrana Bas
             if (data.status === "success") {
-                setMessages(prev => [...prev, { role: 'ai', text: "Harika! Geri bildirimin için teşekkürler. Notlarımı aldım! 📝" }]);
+                setMessages(prev => [...prev, { role: 'ai', text: "Teşekkürler, geri bildirimini aldım." }]);
                 setTimeout(() => {
-                    onClose(); // 3 saniye sonra kapat
+                    onClose();
                 }, 3000);
             } else {
                 setMessages(prev => [...prev, { role: 'ai', text: "Bir hata oluştu ama yazdıklarını kaydettim." }]);
@@ -93,7 +91,7 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
 
         } catch (error) {
             console.error("Hata:", error);
-            setMessages(prev => [...prev, { role: 'ai', text: "Sunucuya ulaşamadım :(" }]);
+            setMessages(prev => [...prev, { role: 'ai', text: "Sunucuya ulaşamadım." }]);
         }
         setLoading(false);
     };
@@ -103,23 +101,22 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed inset-0 z-50 bg-black flex flex-col"
+            className="fixed inset-0 z-50 bg-[var(--color-bg)] flex flex-col"
         >
-            {/* ÜST BAR */}
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md">
-                <h2 className="text-white font-bold">{dishName} Hakkında</h2>
-                <button onClick={onClose} className="text-gray-400 hover:text-white text-xl">✕</button>
+            <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-md">
+                <h2 className="text-[var(--color-text)] font-medium">{dishName ? `${dishName} Hakkında` : "Geri Bildirim"}</h2>
+                <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+                    <X size={20} />
+                </button>
             </div>
 
-            {/* MESAJ ALANI */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl p-4 ${msg.role === 'user'
-                            ? 'bg-gradient-to-br from-orange-600 to-red-600 text-white'
-                            : 'bg-zinc-800 text-gray-200'
+                            ? 'bg-[var(--color-brand)] text-white'
+                            : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)]'
                             }`}>
-                            {/* Varsa Fotoğrafı Göster */}
                             {msg.image && (
                                 <img src={msg.image} alt="Yüklenen" className="w-full rounded-lg mb-2 border border-white/20" />
                             )}
@@ -127,43 +124,41 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
                         </div>
                     </div>
                 ))}
-                {loading && <div className="text-gray-500 text-sm animate-pulse">Barış yazıyor...</div>}
+                {loading && <div className="text-[var(--color-text-muted)] text-sm animate-pulse">yazıyor...</div>}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* ALT BAR (INPUT & KAMERA) */}
-            <div className="p-4 bg-zinc-900 border-t border-zinc-800">
+            <div className="p-4 bg-[var(--color-surface)] border-t border-[var(--color-border)]">
 
-                {/* Fotoğraf Önizleme (Seçildiyse Göster) */}
                 {selectedImage && (
                     <div className="mb-2 flex items-center gap-2">
                         <div className="relative w-16 h-16">
-                            <img src={selectedImage} className="w-full h-full object-cover rounded-lg border border-orange-500" />
+                            <img src={selectedImage} className="w-full h-full object-cover rounded-lg border border-[var(--color-brand)]" />
                             <button
                                 onClick={() => setSelectedImage(null)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                            >✕</button>
+                                className="absolute -top-2 -right-2 bg-[var(--color-danger)] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            >
+                                <X size={12} />
+                            </button>
                         </div>
-                        <span className="text-xs text-gray-400">Fotoğraf eklendi</span>
+                        <span className="text-xs text-[var(--color-text-muted)]">Fotoğraf eklendi</span>
                     </div>
                 )}
 
                 <div className="flex gap-2">
-                    {/* GİZLİ INPUT (Sadece butonla tetiklenir) */}
                     <input
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageSelect}
-                        accept="image/*" // Sadece resim dosyaları
+                        accept="image/*"
                         className="hidden"
                     />
 
-                    {/* KAMERA BUTONU */}
                     <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-3 bg-zinc-800 text-gray-400 rounded-xl hover:text-white hover:bg-zinc-700 transition-colors"
+                        className="p-3 bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-muted)] rounded-xl hover:text-[var(--color-text)] transition-colors"
                     >
-                        📷
+                        <Camera size={18} />
                     </button>
 
                     <input
@@ -171,16 +166,16 @@ export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: Feed
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         placeholder="Düşüncelerin..."
-                        className="flex-1 bg-black border border-zinc-700 rounded-xl px-4 text-white focus:border-orange-500 outline-none"
+                        className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-4 text-[var(--color-text)] focus:border-[var(--color-brand)] outline-none"
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     />
 
                     <button
                         onClick={handleSend}
                         disabled={loading}
-                        className="p-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-500 disabled:opacity-50"
+                        className="p-3 bg-[var(--color-brand)] text-white rounded-xl font-medium hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
                     >
-                        ➤
+                        <Send size={18} />
                     </button>
                 </div>
             </div>

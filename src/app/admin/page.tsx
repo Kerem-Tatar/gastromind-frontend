@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-// 👇 YENİ: BarChart ve Legend eklendi
 import {
-    AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell
+    AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
+import { FlaskConical, Bot, BarChart3, Trophy, TrendingUp, ClipboardList, UtensilsCrossed } from "lucide-react";
+import Link from "next/link";
 import { API_URL } from "@/lib/api";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 
-// --- TİP TANIMLAMALARI ---
 interface DetailedScore {
     category: string;
     item: string;
@@ -42,8 +44,8 @@ interface Stats {
     averageScore: number;
     aiAnalysis: string;
     isCached: boolean;
-    topDishes?: TopDish[];        // <--- YENİ
-    categoryStats?: CategoryStat[]; // <--- YENİ
+    topDishes?: TopDish[];
+    categoryStats?: CategoryStat[];
     feedbacksPreview?: Feedback[];
 }
 
@@ -88,9 +90,8 @@ export default function AdminDashboard() {
         fetchStats(selectedPeriod);
     }, [selectedPeriod]);
 
-    // SİMÜLASYON (SEEDER)
     const handleSeedData = async () => {
-        if (!confirm("⚠️ DİKKAT: 50 adet detaylı test verisi eklenecek.")) return;
+        if (!confirm("50 adet detaylı test verisi eklenecek. Devam edilsin mi?")) return;
         setLoading(true);
         try {
             const token = localStorage.getItem("admin_token");
@@ -110,7 +111,6 @@ export default function AdminDashboard() {
         }
     };
 
-    // GRAFİK VERİSİ (Zaman Serisi)
     const chartData = stats?.feedbacksPreview
         ? [...stats.feedbacksPreview].reverse().map(f => ({
             time: new Date(f.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
@@ -127,69 +127,77 @@ export default function AdminDashboard() {
     ];
 
     return (
-        <div className="min-h-screen bg-black text-white p-8 relative font-sans">
+        <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] p-8 relative">
 
-            {/* LIGHTBOX */}
             {selectedImage && (
                 <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
                     <img src={selectedImage} className="max-w-full max-h-[90vh] rounded-xl object-contain" onClick={(e) => e.stopPropagation()} />
                 </div>
             )}
 
-            {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
-                        GastroMind Yönetim
-                    </h1>
-                    <p className="text-gray-500 text-sm">Zaman Damgası ile Güçlendirilmiş Analiz</p>
+                    <h1 className="text-2xl font-semibold text-[var(--color-text)]">GastroMind Yönetim</h1>
+                    <p className="text-[var(--color-text-muted)] text-sm">Zaman damgası ile güçlendirilmiş analiz</p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={handleSeedData} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">🧪 Veri Bas</button>
-                    <button onClick={() => { localStorage.removeItem("admin_token"); router.push("/admin/login"); }} className="bg-zinc-800 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold border border-zinc-700">Çıkış Yap</button>
+                    <Link href="/admin/menu">
+                        <Button variant="secondary" className="flex items-center gap-2">
+                            <UtensilsCrossed size={16} /> Menü İçeriği
+                        </Button>
+                    </Link>
+                    <Button variant="secondary" onClick={handleSeedData} className="flex items-center gap-2">
+                        <FlaskConical size={16} /> Test Verisi Ekle
+                    </Button>
+                    <Button variant="secondary" onClick={() => { localStorage.removeItem("admin_token"); router.push("/admin/login"); }}>
+                        Çıkış Yap
+                    </Button>
                 </div>
             </div>
 
-            {/* DÖNEM SEÇİCİ */}
-            <div className="flex flex-wrap gap-2 mb-8 bg-zinc-900/50 p-2 rounded-xl border border-zinc-800 w-fit">
+            <div className="flex flex-wrap gap-2 mb-8 bg-[var(--color-surface)] p-2 rounded-xl border border-[var(--color-border)] w-fit">
                 {periods.map((p) => (
-                    <button key={p.id} onClick={() => setSelectedPeriod(p.id)} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${selectedPeriod === p.id ? "bg-gradient-to-r from-orange-600 to-red-600 text-white" : "text-gray-400 hover:bg-zinc-800"}`}>
+                    <button
+                        key={p.id}
+                        onClick={() => setSelectedPeriod(p.id)}
+                        className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${selectedPeriod === p.id ? "bg-[var(--color-brand)] text-white" : "text-[var(--color-text-muted)] hover:bg-[var(--color-border)]"}`}
+                    >
                         {p.label}
                     </button>
                 ))}
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center h-64"><p className="text-gray-400 animate-pulse">Analiz ediliyor...</p></div>
+                <div className="flex flex-col items-center justify-center h-64"><p className="text-[var(--color-text-muted)] animate-pulse">Analiz ediliyor...</p></div>
             ) : (
                 <>
-                    {/* 1. SATIR: TEMEL KARTLAR */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                            <h3 className="text-gray-400 text-xs uppercase font-bold">Toplam İşlem</h3>
-                            <p className="text-4xl font-black text-white mt-2">{stats?.totalFeedback || 0}</p>
-                        </div>
-                        <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
-                            <h3 className="text-gray-400 text-xs uppercase font-bold">Ortalama Puan</h3>
-                            <p className={`text-4xl font-black mt-2 ${(stats?.averageScore || 0) >= 4 ? 'text-green-500' : 'text-orange-500'}`}>{(stats?.averageScore || 0).toFixed(1)}</p>
-                        </div>
-                        <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 rounded-2xl border border-orange-500/30 md:col-span-2">
-                            <h3 className="text-orange-400 font-bold uppercase text-xs mb-2">🤖 AI Danışman</h3>
-                            <p className="text-sm text-gray-300 italic line-clamp-3 hover:line-clamp-none transition-all">"{stats?.aiAnalysis}"</p>
-                        </div>
+                        <Card className="p-6">
+                            <h3 className="text-[var(--color-text-muted)] text-xs uppercase font-medium">Toplam İşlem</h3>
+                            <p className="text-3xl font-semibold text-[var(--color-text)] mt-2">{stats?.totalFeedback || 0}</p>
+                        </Card>
+                        <Card className="p-6">
+                            <h3 className="text-[var(--color-text-muted)] text-xs uppercase font-medium">Ortalama Puan</h3>
+                            <p className={`text-3xl font-semibold mt-2 ${(stats?.averageScore || 0) >= 4 ? 'text-green-500' : 'text-[var(--color-brand)]'}`}>{(stats?.averageScore || 0).toFixed(1)}</p>
+                        </Card>
+                        <Card className="p-6 md:col-span-2">
+                            <h3 className="text-[var(--color-brand)] font-medium uppercase text-xs mb-2 flex items-center gap-2">
+                                <Bot size={14} /> AI Danışman
+                            </h3>
+                            <p className="text-sm text-[var(--color-text-muted)] italic line-clamp-3 hover:line-clamp-none transition-all">&quot;{stats?.aiAnalysis}&quot;</p>
+                        </Card>
                     </div>
 
-                    {/* 2. SATIR: GRAFİKLER (YENİ EKLENEN KISIM) 📊 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-
-                        {/* SOL: KATEGORİ PERFORMANSI */}
-                        <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 h-80">
-                            <h3 className="text-gray-400 mb-4 text-sm uppercase font-bold flex items-center gap-2">📊 Kategori Karnesi</h3>
+                        <Card className="p-6 h-80">
+                            <h3 className="text-[var(--color-text-muted)] mb-4 text-sm uppercase font-medium flex items-center gap-2">
+                                <BarChart3 size={14} /> Kategori Karnesi
+                            </h3>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats?.categoryStats} layout="vertical" margin={{ left: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
                                     <XAxis type="number" domain={[0, 5]} hide />
-                                    <YAxis dataKey="name" type="category" stroke="#fff" width={80} tick={{ fontSize: 12 }} />
+                                    <YAxis dataKey="name" type="category" stroke="#a1a1aa" width={80} tick={{ fontSize: 12 }} />
                                     <Tooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }} />
                                     <Bar dataKey="score" radius={[0, 4, 4, 0]}>
                                         {stats?.categoryStats?.map((entry, index) => (
@@ -198,68 +206,70 @@ export default function AdminDashboard() {
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
+                        </Card>
 
-                        {/* SAĞ: EN ÇOK KONUŞULANLAR (TOP DISHES) */}
-                        <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 h-80">
-                            <h3 className="text-gray-400 mb-4 text-sm uppercase font-bold flex items-center gap-2">🏆 En Çok Konuşulanlar</h3>
+                        <Card className="p-6 h-80">
+                            <h3 className="text-[var(--color-text-muted)] mb-4 text-sm uppercase font-medium flex items-center gap-2">
+                                <Trophy size={14} /> En Çok Konuşulanlar
+                            </h3>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats?.topDishes}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                    <XAxis dataKey="name" stroke="#666" tick={{ fontSize: 10 }} interval={0} />
-                                    <YAxis domain={[0, 5]} stroke="#666" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                                    <XAxis dataKey="name" stroke="#71717a" tick={{ fontSize: 10 }} interval={0} />
+                                    <YAxis domain={[0, 5]} stroke="#71717a" />
                                     <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }} />
-                                    <Bar dataKey="score" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="score" fill="var(--color-brand)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
-                        </div>
+                        </Card>
                     </div>
 
-                    {/* 3. SATIR: ZAMAN ÇİZELGESİ (ESKİ GRAFİK) */}
-                    <div className="mb-8 bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 h-72">
-                        <h3 className="text-gray-400 mb-4 text-sm uppercase font-bold">📈 Zaman İçinde Değişim</h3>
+                    <Card className="mb-8 p-6 h-72">
+                        <h3 className="text-[var(--color-text-muted)] mb-4 text-sm uppercase font-medium flex items-center gap-2">
+                            <TrendingUp size={14} /> Zaman İçinde Değişim
+                        </h3>
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData}>
                                 <defs>
                                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#ea580c" stopOpacity={0.6} />
+                                        <stop offset="95%" stopColor="#ea580c" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                                <XAxis dataKey="time" stroke="#666" />
-                                <YAxis domain={[0, 5]} stroke="#666" />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                                <XAxis dataKey="time" stroke="#71717a" />
+                                <YAxis domain={[0, 5]} stroke="#71717a" />
                                 <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }} />
-                                <Area type="monotone" dataKey="score" stroke="#f97316" fillOpacity={1} fill="url(#colorScore)" />
+                                <Area type="monotone" dataKey="score" stroke="#ea580c" fillOpacity={1} fill="url(#colorScore)" />
                             </AreaChart>
                         </ResponsiveContainer>
-                    </div>
+                    </Card>
 
-                    {/* LİSTE */}
-                    <h2 className="text-xl font-bold mb-4 border-b border-zinc-800 pb-2">📝 Detaylı Geri Bildirimler</h2>
+                    <h2 className="text-lg font-semibold mb-4 border-b border-[var(--color-border)] pb-2 flex items-center gap-2">
+                        <ClipboardList size={18} /> Detaylı Geri Bildirimler
+                    </h2>
                     <div className="grid gap-4 pb-20">
                         {stats?.feedbacksPreview?.map((fb) => (
-                            <div key={fb._id} className="bg-zinc-900/50 p-5 rounded-2xl border border-zinc-800 flex flex-col md:flex-row gap-4 hover:border-zinc-600 transition-colors">
+                            <Card key={fb._id} className="p-5 flex flex-col md:flex-row gap-4 hover:border-[var(--color-text-muted)] transition-colors">
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <h3 className="font-bold text-white text-lg">{fb.dish_name}</h3>
-                                            <span className="text-xs text-gray-500">{new Date(fb.created_at).toLocaleString('tr-TR')}</span>
+                                            <h3 className="font-medium text-[var(--color-text)] text-lg">{fb.dish_name}</h3>
+                                            <span className="text-xs text-[var(--color-text-muted)]">{new Date(fb.created_at).toLocaleString('tr-TR')}</span>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-lg text-sm font-bold ${fb.sentiment_score >= 4 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+                                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${fb.sentiment_score >= 4 ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
                                             {fb.sentiment_score}/5
                                         </span>
                                     </div>
-                                    <p className="text-gray-300 text-sm bg-black/40 p-3 rounded-lg border border-white/5 mb-3">
-                                        "{(fb.conversation_history || []).find(m => m.role === 'user')?.content || "Yorum yok"}"
+                                    <p className="text-[var(--color-text-muted)] text-sm bg-black/40 p-3 rounded-lg border border-white/5 mb-3">
+                                        &quot;{(fb.conversation_history || []).find(m => m.role === 'user')?.content || "Yorum yok"}&quot;
                                     </p>
-                                    {/* DETAY PUANLARI */}
                                     {fb.detailed_scores && fb.detailed_scores.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
                                             {fb.detailed_scores.map((ds, idx) => (
                                                 <div key={idx} className={`px-2 py-1 rounded text-xs border flex items-center gap-2 ${ds.score >= 4 ? 'bg-green-950/30 border-green-800 text-green-300' : ds.score <= 2 ? 'bg-red-950/30 border-red-800 text-red-300' : 'bg-yellow-950/30 border-yellow-800 text-yellow-300'}`}>
-                                                    <span className="opacity-70 font-semibold">{ds.item}:</span>
-                                                    <span className="font-bold text-base">{ds.score}</span>
+                                                    <span className="opacity-70 font-medium">{ds.item}:</span>
+                                                    <span className="font-semibold text-base">{ds.score}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -267,10 +277,10 @@ export default function AdminDashboard() {
                                 </div>
                                 {fb.customer_photo && (
                                     <div className="shrink-0">
-                                        <img src={fb.customer_photo} className="w-24 h-24 object-cover rounded-xl cursor-zoom-in border border-zinc-700" onClick={() => setSelectedImage(fb.customer_photo!)} />
+                                        <img src={fb.customer_photo} className="w-24 h-24 object-cover rounded-xl cursor-zoom-in border border-[var(--color-border)]" onClick={() => setSelectedImage(fb.customer_photo!)} />
                                     </div>
                                 )}
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 </>

@@ -1,7 +1,11 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Sayfa yönlendirmesi için
+import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Card from "@/components/ui/Card";
 
 export default function AdminLogin() {
     const [username, setUsername] = useState("");
@@ -10,7 +14,7 @@ export default function AdminLogin() {
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault(); // Sayfa yenilenmesin
+        e.preventDefault();
 
         try {
             const res = await fetch(`${API_URL}/api/admin/login`, {
@@ -22,12 +26,10 @@ export default function AdminLogin() {
             const data = await res.json();
 
             if (data.status === "success") {
-                // BAŞARILI! Token'ı cebe (LocalStorage) at.
                 localStorage.setItem("admin_token", data.token);
-                // Panela yönlendir
                 router.push("/admin");
             } else {
-                setError("Giriş Başarısız: " + data.error);
+                setError("Giriş başarısız: " + data.error);
             }
         } catch (err) {
             setError("Sunucuya bağlanılamadı.");
@@ -35,46 +37,45 @@ export default function AdminLogin() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-black px-4">
-            <div className="w-full max-w-md bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-2xl">
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
+            <Card className="w-full max-w-md p-8">
                 <div className="text-center mb-8">
-                    <div className="text-5xl mb-2">🔒</div>
-                    <h1 className="text-2xl font-bold text-white">Patron Girişi</h1>
-                    <p className="text-gray-500 text-sm">GastroMind Yönetim Paneli</p>
+                    <div className="mx-auto mb-3 w-12 h-12 rounded-full bg-[var(--color-brand)]/15 text-[var(--color-brand)] flex items-center justify-center">
+                        <Lock size={22} />
+                    </div>
+                    <h1 className="text-xl font-semibold text-[var(--color-text)]">Yönetim Girişi</h1>
+                    <p className="text-[var(--color-text-muted)] text-sm">GastroMind</p>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div>
-                        <label className="text-gray-400 text-sm block mb-1">Kullanıcı Adı</label>
-                        <input
+                        <label className="text-[var(--color-text-muted)] text-sm block mb-1">Kullanıcı Adı</label>
+                        <Input
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full bg-black border border-zinc-700 text-white p-3 rounded-xl focus:border-orange-500 outline-none transition-colors"
+                            className="w-full"
                             placeholder="admin"
                         />
                     </div>
                     <div>
-                        <label className="text-gray-400 text-sm block mb-1">Şifre</label>
-                        <input
+                        <label className="text-[var(--color-text-muted)] text-sm block mb-1">Şifre</label>
+                        <Input
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full bg-black border border-zinc-700 text-white p-3 rounded-xl focus:border-orange-500 outline-none transition-colors"
+                            className="w-full"
                             placeholder="••••••"
                         />
                     </div>
 
-                    {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+                    {error && <div className="text-[var(--color-danger)] text-sm text-center">{error}</div>}
 
-                    <button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform"
-                    >
-                        Giriş Yap 🚀
-                    </button>
+                    <Button type="submit" variant="primary" size="lg" className="w-full">
+                        Giriş Yap
+                    </Button>
                 </form>
-            </div>
+            </Card>
         </div>
     );
 }

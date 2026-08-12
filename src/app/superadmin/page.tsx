@@ -2,7 +2,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { User, AlertTriangle } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Card from "@/components/ui/Card";
 
 interface RestaurantRow {
     _id: string;
@@ -19,7 +23,6 @@ export default function SuperAdminDashboard() {
     const [error, setError] = useState("");
     const router = useRouter();
 
-    // Yeni restoran formu
     const [name, setName] = useState("");
     const [slug, setSlug] = useState("");
     const [ownerUsername, setOwnerUsername] = useState("");
@@ -83,56 +86,55 @@ export default function SuperAdminDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white p-6 max-w-3xl mx-auto">
+        <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] p-6 max-w-3xl mx-auto">
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-2xl font-bold">🛠️ Superadmin Paneli</h1>
-                <button
+                <h1 className="text-xl font-semibold">Superadmin Paneli</h1>
+                <Button
+                    variant="secondary"
                     onClick={() => { localStorage.removeItem("admin_token"); router.push("/superadmin/login"); }}
-                    className="bg-zinc-800 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold border border-zinc-700"
                 >
                     Çıkış Yap
-                </button>
+                </Button>
             </div>
 
-            <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
-                <h2 className="text-lg font-bold mb-4">Yeni Restoran Ekle</h2>
+            <Card className="p-6 mb-8">
+                <h2 className="text-base font-semibold mb-4">Yeni Restoran Ekle</h2>
                 <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3">
-                    <input placeholder="Restoran Adı" value={name} onChange={(e) => setName(e.target.value)}
-                        className="bg-black border border-zinc-700 p-3 rounded-xl outline-none focus:border-orange-500" required />
-                    <input placeholder="slug (örn: kral-burger)" value={slug} onChange={(e) => setSlug(e.target.value)}
-                        className="bg-black border border-zinc-700 p-3 rounded-xl outline-none focus:border-orange-500" required />
-                    <input placeholder="Sahip Kullanıcı Adı" value={ownerUsername} onChange={(e) => setOwnerUsername(e.target.value)}
-                        className="bg-black border border-zinc-700 p-3 rounded-xl outline-none focus:border-orange-500" required />
-                    <input placeholder="Sahip Şifre" type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)}
-                        className="bg-black border border-zinc-700 p-3 rounded-xl outline-none focus:border-orange-500" required />
-                    {error && <div className="col-span-2 text-red-500 text-sm">{error}</div>}
-                    <button type="submit" disabled={creating}
-                        className="col-span-2 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold py-3 rounded-xl disabled:opacity-50">
+                    <Input placeholder="Restoran Adı" value={name} onChange={(e) => setName(e.target.value)} required />
+                    <Input placeholder="slug (örn: kral-burger)" value={slug} onChange={(e) => setSlug(e.target.value)} required />
+                    <Input placeholder="Sahip Kullanıcı Adı" value={ownerUsername} onChange={(e) => setOwnerUsername(e.target.value)} required />
+                    <Input placeholder="Sahip Şifre" type="password" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required />
+                    {error && <div className="col-span-2 text-[var(--color-danger)] text-sm">{error}</div>}
+                    <Button type="submit" variant="primary" size="lg" disabled={creating} className="col-span-2">
                         {creating ? "Oluşturuluyor..." : "Restoran + Sahip Hesabı Oluştur"}
-                    </button>
+                    </Button>
                 </form>
-            </section>
+            </Card>
 
             <section>
-                <h2 className="text-lg font-bold mb-4">Restoranlar</h2>
+                <h2 className="text-base font-semibold mb-4">Restoranlar</h2>
                 {loading ? (
-                    <div className="text-gray-500">Yükleniyor...</div>
+                    <div className="text-[var(--color-text-muted)]">Yükleniyor...</div>
                 ) : restaurants.length === 0 ? (
-                    <div className="text-gray-500">Henüz restoran yok.</div>
+                    <div className="text-[var(--color-text-muted)]">Henüz restoran yok.</div>
                 ) : (
                     <div className="space-y-2">
                         {restaurants.map((r) => (
                             <Link
                                 key={r._id}
                                 href={`/superadmin/restaurants/${r._id}`}
-                                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex justify-between items-center hover:border-orange-500 transition-colors"
+                                className="block bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4 flex justify-between items-center hover:border-[var(--color-brand)] transition-colors"
                             >
                                 <div>
-                                    <div className="font-bold">{r.name}</div>
-                                    <div className="text-sm text-gray-500">/{r.slug} · {r.type}</div>
+                                    <div className="font-medium">{r.name}</div>
+                                    <div className="text-sm text-[var(--color-text-muted)]">/{r.slug} · {r.type}</div>
                                 </div>
-                                <div className="text-sm text-gray-400">
-                                    {r.ownerUsername ? `👤 ${r.ownerUsername}` : "⚠️ sahip yok"}
+                                <div className="text-sm text-[var(--color-text-muted)] flex items-center gap-1.5">
+                                    {r.ownerUsername ? (
+                                        <><User size={14} /> {r.ownerUsername}</>
+                                    ) : (
+                                        <><AlertTriangle size={14} className="text-yellow-500" /> sahip yok</>
+                                    )}
                                 </div>
                             </Link>
                         ))}
