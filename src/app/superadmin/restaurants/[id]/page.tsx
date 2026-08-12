@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { X, Trash2, Pencil } from "lucide-react";
@@ -53,7 +53,15 @@ export default function RestaurantManage() {
 
     const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
     const [menu, setMenu] = useState<MenuItemRow[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
+
+    const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const showToast = (type: "success" | "error", text: string) => {
+        if (toastTimeout.current) clearTimeout(toastTimeout.current);
+        setToast({ type, text });
+        toastTimeout.current = setTimeout(() => setToast(null), 3000);
+    };
 
     const [ownerUsername, setOwnerUsername] = useState("");
     const [ownerPassword, setOwnerPassword] = useState("");
@@ -89,6 +97,7 @@ export default function RestaurantManage() {
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editFields, setEditFields] = useState<Partial<MenuItemRow>>({});
+    const [editTagsInput, setEditTagsInput] = useState("");
     const [editMsg, setEditMsg] = useState("");
 
     const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("admin_token")}` });
@@ -97,7 +106,6 @@ export default function RestaurantManage() {
         const token = localStorage.getItem("admin_token");
         if (!token) { router.push("/superadmin/login"); return; }
 
-        setLoading(true);
         const [rRes, mRes, tRes] = await Promise.all([
             fetch(`${API_URL}/api/superadmin/restaurants/${id}`, { headers: authHeaders() }),
             fetch(`${API_URL}/api/superadmin/restaurants/${id}/menu`, { headers: authHeaders() }),
@@ -123,7 +131,7 @@ export default function RestaurantManage() {
         setMenu(mData);
         setAllTags(tData.allTags || []);
         setComparableTags(tData.comparableTags || []);
-        setLoading(false);
+        setInitialLoading(false);
     };
 
     useEffect(() => { loadAll(); }, [id]);
@@ -225,18 +233,26 @@ export default function RestaurantManage() {
         const data = await res.json();
         if (res.ok) {
             setCategoryId(""); setCategoryName(""); setCategoryIcon(CATEGORY_ICON_OPTIONS[0]);
+            showToast("success", "Kategori eklendi.");
             loadAll();
         } else {
             setCategoryError(data.error || "Eklenemedi");
+            showToast("error", data.error || "Kategori eklenemedi.");
         }
     };
 
     const handleDeleteCategory = async (catId: string) => {
         if (!confirm("Bu kategoriyi silmek istediğine emin misin?")) return;
-        await fetch(`${API_URL}/api/superadmin/restaurants/${id}/categories/${catId}`, {
+        const res = await fetch(`${API_URL}/api/superadmin/restaurants/${id}/categories/${catId}`, {
             method: "DELETE",
             headers: authHeaders(),
         });
+        if (res.ok) {
+            showToast("success", "Kategori silindi.");
+        } else {
+            const data = await res.json().catch(() => ({}));
+            showToast("error", data.error || "Kategori silinemedi.");
+        }
         loadAll();
     };
 
@@ -263,18 +279,26 @@ export default function RestaurantManage() {
         if (res.ok) {
             setItemName(""); setItemDescription(""); setItemIngredients(""); setItemNutrition("");
             setItemPrice(""); setItemCategory(""); setItemTags(""); setItemImage(null);
+            showToast("success", "Ürün eklendi.");
             loadAll();
         } else {
             setItemError(data.error || "Eklenemedi");
+            showToast("error", data.error || "Ürün eklenemedi.");
         }
     };
 
     const handleDeleteItem = async (itemId: string) => {
         if (!confirm("Bu ürünü silmek istediğine emin misin?")) return;
-        await fetch(`${API_URL}/api/superadmin/restaurants/${id}/menu/${itemId}`, {
+        const res = await fetch(`${API_URL}/api/superadmin/restaurants/${id}/menu/${itemId}`, {
             method: "DELETE",
             headers: authHeaders(),
         });
+        if (res.ok) {
+            showToast("success", "Ürün silindi.");
+        } else {
+            const data = await res.json().catch(() => ({}));
+            showToast("error", data.error || "Ürün silinemedi.");
+        }
         loadAll();
     };
 
@@ -282,11 +306,17 @@ export default function RestaurantManage() {
         setPhotoUploadingId(itemId);
         const formData = new FormData();
         formData.append("image", file);
-        await fetch(`${API_URL}/api/superadmin/restaurants/${id}/menu/${itemId}/photo`, {
+        const res = await fetch(`${API_URL}/api/superadmin/restaurants/${id}/menu/${itemId}/photo`, {
             method: "PATCH",
             headers: authHeaders(),
             body: formData,
         });
+        if (res.ok) {
+            showToast("success", "Fotoğraf güncellendi.");
+        } else {
+            const data = await res.json().catch(() => ({}));
+            showToast("error", data.error || "Fotoğraf güncellenemedi.");
+        }
         await loadAll();
         setPhotoUploadingId(null);
     };
@@ -301,6 +331,7 @@ export default function RestaurantManage() {
             price: item.price,
             category: item.category,
         });
+        setEditTagsInput((item.tags || []).join(", "));
         setEditMsg("");
     };
 
@@ -309,23 +340,33 @@ export default function RestaurantManage() {
         const res = await fetch(`${API_URL}/api/superadmin/restaurants/${id}/menu/${itemId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json", ...authHeaders() },
-            body: JSON.stringify(editFields),
+            body: JSON.stringify({ ...editFields, tags: editTagsInput }),
         });
         if (res.ok) {
             setEditingId(null);
+            showToast("success", "Ürün güncellendi.");
             loadAll();
         } else {
             setEditMsg("Güncellenemedi");
+            showToast("error", "Ürün güncellenemedi.");
         }
     };
 
-    if (loading) return <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] p-6">Yükleniyor...</div>;
+    if (initialLoading) return <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] p-6">Yükleniyor...</div>;
     if (!restaurant) return <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] p-6">Restoran bulunamadı.</div>;
 
     const categories = restaurant.categories || [];
 
     return (
         <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] p-6 max-w-3xl mx-auto">
+            {toast && (
+                <div
+                    className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.type === "success" ? "bg-emerald-600" : "bg-[var(--color-danger)]"
+                        }`}
+                >
+                    {toast.text}
+                </div>
+            )}
             <Link href="/superadmin" className="text-[var(--color-text-muted)] text-sm">← Restoranlar</Link>
             <h1 className="text-xl font-semibold mt-2 mb-1">{restaurant.name}</h1>
             <div className="text-[var(--color-text-muted)] mb-8">/{restaurant.slug}</div>
@@ -538,6 +579,7 @@ export default function RestaurantManage() {
                                                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                                 </select>
                                             </div>
+                                            <Input placeholder="Etiketler (virgülle)" value={editTagsInput} onChange={(e) => setEditTagsInput(e.target.value)} className="w-full" />
                                             <textarea placeholder="Açıklama" value={editFields.description || ""} onChange={(e) => setEditFields({ ...editFields, description: e.target.value })} rows={2}
                                                 className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] p-3 rounded-xl outline-none focus:border-[var(--color-brand)] text-sm" />
                                             <textarea placeholder="İçerik" value={editFields.ingredients || ""} onChange={(e) => setEditFields({ ...editFields, ingredients: e.target.value })} rows={2}
