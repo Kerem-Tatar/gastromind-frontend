@@ -18,9 +18,13 @@ interface FeedbackFlowProps {
 }
 
 export default function FeedbackFlow({ restaurantSlug, dishName, onClose }: FeedbackFlowProps) {
+    // Dish-specific entry (DishDetail / recommend game) keeps asking about the dish, but
+    // also nudges toward venue-level observations (atmosphere, cleanliness, staff) that
+    // people otherwise wouldn't think to mention unprompted. General entry (no dish) skips
+    // straight to "what did you have" since there's no dish context to anchor on yet.
     const openingMessage = dishName
-        ? `Selam! ${dishName} nasıldı? Dürüst ol, aramızda kalacak.`
-        : `Selam! Deneyimin hakkında ne düşünüyorsun, seni dinliyorum.`;
+        ? `Selam! ${dishName} nasıldı? Dürüst ol, aramızda kalacak. Ve genel restoran deneyimini nasıl buldun? (Örn. atmosfer, temizlik)`
+        : `Selam! Bugün ne yiyip içtin, deneyimin nasıldı? Dürüst ol, aramızda kalacak.`;
 
     const [messages, setMessages] = useState<Message[]>([
         { role: 'ai', text: openingMessage }

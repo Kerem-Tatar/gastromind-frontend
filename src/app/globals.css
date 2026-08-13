@@ -18,4 +18,8 @@
 
 body {
   font-family: var(--font-app);
+  /* Pages scope their dark background to a centered content column, so without this,
+     desktop side gutters and mobile overscroll bounce reveal the browser's default
+     white instead of the app's theme. */
+  background-color: var(--color-bg);
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
-import { FlaskConical, Bot, BarChart3, Trophy, TrendingUp, ClipboardList, UtensilsCrossed } from "lucide-react";
+import { FlaskConical, Bot, BarChart3, Trophy, TrendingUp, ClipboardList, UtensilsCrossed, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { API_URL } from "@/lib/api";
 import Button from "@/components/ui/Button";
@@ -54,6 +54,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [selectedPeriod, setSelectedPeriod] = useState("daily");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [aiExpanded, setAiExpanded] = useState(false);
     const router = useRouter();
 
     const fetchStats = (period: string) => {
@@ -168,7 +169,10 @@ export default function AdminDashboard() {
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center h-64"><p className="text-[var(--color-text-muted)] animate-pulse">Analiz ediliyor...</p></div>
+                <div className="flex flex-col items-center justify-center h-64 gap-3">
+                    <Loader2 size={28} className="text-[var(--color-brand)] animate-spin" />
+                    <p className="text-[var(--color-text-muted)]">Analiz ediliyor...</p>
+                </div>
             ) : (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -184,7 +188,15 @@ export default function AdminDashboard() {
                             <h3 className="text-[var(--color-brand)] font-medium uppercase text-xs mb-2 flex items-center gap-2">
                                 <Bot size={14} /> AI Danışman
                             </h3>
-                            <p className="text-sm text-[var(--color-text-muted)] italic line-clamp-3 hover:line-clamp-none transition-all">&quot;{stats?.aiAnalysis}&quot;</p>
+                            <p className={`text-sm text-[var(--color-text-muted)] italic ${aiExpanded ? "" : "line-clamp-3"}`}>&quot;{stats?.aiAnalysis}&quot;</p>
+                            {(stats?.aiAnalysis?.length || 0) > 160 && (
+                                <button
+                                    onClick={() => setAiExpanded((v) => !v)}
+                                    className="text-xs text-[var(--color-brand)] mt-2 flex items-center gap-1"
+                                >
+                                    {aiExpanded ? <>Daralt <ChevronUp size={12} /></> : <>Devamını Oku <ChevronDown size={12} /></>}
+                                </button>
+                            )}
                         </Card>
                     </div>
 
@@ -198,7 +210,12 @@ export default function AdminDashboard() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
                                     <XAxis type="number" domain={[0, 5]} hide />
                                     <YAxis dataKey="name" type="category" stroke="#a1a1aa" width={80} tick={{ fontSize: 12 }} />
-                                    <Tooltip cursor={{ fill: '#ffffff10' }} contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }} />
+                                    <Tooltip
+                                        cursor={{ fill: '#ffffff10' }}
+                                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }}
+                                        labelStyle={{ color: '#a1a1aa' }}
+                                        itemStyle={{ color: '#fafafa' }}
+                                    />
                                     <Bar dataKey="score" radius={[0, 4, 4, 0]}>
                                         {stats?.categoryStats?.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.score >= 4 ? '#22c55e' : entry.score >= 2.5 ? '#f59e0b' : '#ef4444'} />
@@ -217,8 +234,13 @@ export default function AdminDashboard() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                                     <XAxis dataKey="name" stroke="#71717a" tick={{ fontSize: 10 }} interval={0} />
                                     <YAxis domain={[0, 5]} stroke="#71717a" />
-                                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }} />
-                                    <Bar dataKey="score" fill="var(--color-brand)" radius={[4, 4, 0, 0]} />
+                                    <Tooltip
+                                        cursor={{ fill: '#ffffff10' }}
+                                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46' }}
+                                        labelStyle={{ color: '#a1a1aa' }}
+                                        itemStyle={{ color: '#fafafa' }}
+                                    />
+                                    <Bar dataKey="score" name="İlgili yorum sayısı" fill="var(--color-brand)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </Card>
