@@ -13,6 +13,7 @@ interface CategoryRow {
     id: string;
     name: string;
     icon: string;
+    order: number;
 }
 
 interface Branding {
@@ -82,6 +83,7 @@ export default function RestaurantManage() {
     const [categoryId, setCategoryId] = useState("");
     const [categoryName, setCategoryName] = useState("");
     const [categoryIcon, setCategoryIcon] = useState(CATEGORY_ICON_OPTIONS[0]);
+    const [categoryOrder, setCategoryOrder] = useState("");
     const [categoryError, setCategoryError] = useState("");
 
     const [itemName, setItemName] = useState("");
@@ -228,11 +230,11 @@ export default function RestaurantManage() {
         const res = await fetch(`${API_URL}/api/superadmin/restaurants/${id}/categories`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...authHeaders() },
-            body: JSON.stringify({ id: categoryId, name: categoryName, icon: categoryIcon }),
+            body: JSON.stringify({ id: categoryId, name: categoryName, icon: categoryIcon, order: categoryOrder }),
         });
         const data = await res.json();
         if (res.ok) {
-            setCategoryId(""); setCategoryName(""); setCategoryIcon(CATEGORY_ICON_OPTIONS[0]);
+            setCategoryId(""); setCategoryName(""); setCategoryIcon(CATEGORY_ICON_OPTIONS[0]); setCategoryOrder("");
             showToast("success", "Kategori eklendi.");
             loadAll();
         } else {
@@ -453,10 +455,11 @@ export default function RestaurantManage() {
 
                 {categories.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
-                        {categories.map((c) => {
+                        {[...categories].sort((a, b) => a.order - b.order).map((c) => {
                             const Icon = getCategoryIcon(c.icon);
                             return (
                                 <div key={c.id} className="flex items-center gap-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 text-sm">
+                                    <span className="text-[var(--color-text-muted)] font-mono">{c.order}</span>
                                     <Icon size={16} />
                                     <span>{c.name}</span>
                                     <span className="text-[var(--color-text-muted)]">({c.id})</span>
@@ -469,9 +472,10 @@ export default function RestaurantManage() {
                     </div>
                 )}
 
-                <form onSubmit={handleAddCategory} className="grid grid-cols-3 gap-3 items-end">
+                <form onSubmit={handleAddCategory} className="grid grid-cols-4 gap-3 items-end">
                     <Input placeholder="id (örn: ana_yemek)" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required />
                     <Input placeholder="Görünen Ad (örn: Ana Yemekler)" value={categoryName} onChange={(e) => setCategoryName(e.target.value)} required />
+                    <Input placeholder="Sıra (örn: 1)" type="number" value={categoryOrder} onChange={(e) => setCategoryOrder(e.target.value)} required />
                     <div className="flex items-center gap-2">
                         <select value={categoryIcon} onChange={(e) => setCategoryIcon(e.target.value)}
                             className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border)] p-3 rounded-xl outline-none focus:border-[var(--color-brand)]">
@@ -479,8 +483,8 @@ export default function RestaurantManage() {
                         </select>
                         {(() => { const Icon = getCategoryIcon(categoryIcon); return <Icon size={20} className="shrink-0" />; })()}
                     </div>
-                    {categoryError && <div className="col-span-3 text-[var(--color-danger)] text-sm">{categoryError}</div>}
-                    <Button type="submit" variant="primary" size="lg" className="col-span-3">
+                    {categoryError && <div className="col-span-4 text-[var(--color-danger)] text-sm">{categoryError}</div>}
+                    <Button type="submit" variant="primary" size="lg" className="col-span-4">
                         Kategori Ekle
                     </Button>
                 </form>
